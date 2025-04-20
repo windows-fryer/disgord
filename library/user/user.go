@@ -1,7 +1,12 @@
 package user
 
 import (
-	"disgord.dev/disgord/internal/snowflake"
+	"encoding/json"
+	"io"
+
+	"disgord.dev/disgord/library/authorization"
+	"disgord.dev/disgord/library/rest"
+	"disgord.dev/disgord/library/snowflake"
 )
 
 const (
@@ -85,9 +90,7 @@ func parseSnowflake(data any) snowflake.Snowflake {
 	if str, ok := data.(string); ok {
 		return snowflake.ParseSnowflakeString(str)
 	}
-	if i, ok := data.(uint64); ok {
-		return snowflake.ParseSnowflake(i)
-	}
+
 	return snowflake.Snowflake{}
 }
 
@@ -119,4 +122,27 @@ func ParseDiscordUser(userJSON map[string]any) *DiscordUser {
 
 		AvatarDecorationData: parseDiscordAvatarDecorationData(userJSON["avatar_decoration_data"]),
 	}
+}
+
+func GetCurrentUser(authorization *authorization.DiscordAuthorization) (*DiscordUser, error) {
+	response, e := rest.RestRequest(authorization, "GET", rest.GetCurrentUser)
+
+	if e != nil {
+		return nil, e
+	}
+
+	// if response.StatusCode != 200 {
+	// 	return nil, (response.StatusCode, response.Status, response.Body)
+	// }
+
+	body, _ := io.ReadAll(response.Body)
+	bodyJSON := make(map[string]interface{})
+
+	json.Unmarshal(body, &bodyJSON)
+
+	user := ParseDiscordUser(bodyJSON)
+
+	response.Body.Close()
+
+	return user, nil
 }

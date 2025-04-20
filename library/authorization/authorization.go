@@ -19,7 +19,7 @@ func (d *DiscordAuthorization) BuildAuthorizationHeader() string {
 	case Bearer:
 		return "Bearer " + d.Token
 	default:
-		return "Bot " + d.Token
+		panic("Invalid authorization mode: " + string(d.Mode))
 	}
 }
 

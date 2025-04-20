@@ -13,7 +13,8 @@ func main() {
 	godotenv.Load(".env")
 
 	application := discordgo.BuildDiscordApplicationToken(os.Getenv("BOT_TOKEN"))
-	user, err := application.IdentifyApplication()
+
+	user, err := application.GetUser()
 
 	if err != nil {
 		fmt.Println("Error:", err)

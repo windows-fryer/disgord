@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"disgord.dev/disgord/internal/authorization"
+	"disgord.dev/disgord/library/authorization"
+	"disgord.dev/disgord/library/ratelimit"
 )
 
 func buildRestHeaders(auth *authorization.DiscordAuthorization) map[string]string {
@@ -39,12 +40,19 @@ func RestRequest(authorization *authorization.DiscordAuthorization, method strin
 		return nil, err
 	}
 
-	client := &http.Client{}
-	response, err := client.Do(request)
+	ratelimit.ParseRateLimitHeader(&request.Header)
 
-	if err != nil {
-		return nil, err
+	bucket := ratelimit.ParseRateLimitBucket(&request.Header)
+
+	SendChannelRequest(bucket, request)
+
+	response := GetChannelRequest(bucket)
+
+	if response.Response != nil {
+		ratelimit.ParseRateLimitHeader(&response.Response.Header)
+
+		return response.Response, nil
 	}
 
-	return response, nil
+	return nil, fmt.Errorf("failed to get response from channel: %s", bucket)
 }
